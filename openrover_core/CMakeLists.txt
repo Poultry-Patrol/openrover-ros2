@@ -29,7 +29,7 @@ add_executable(rover
   src/rover_serial.cpp
   src/rover.cpp
   src/data.cpp
-  src/pi_controller.cpp
+  src/pid_controller.cpp
   ${AllHeaders})
 
 target_include_directories(rover

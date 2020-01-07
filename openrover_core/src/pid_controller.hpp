@@ -5,11 +5,12 @@
 
 double clamp(double value, double min, double max);
 
-class PIController
+class PIDController
 {
 public:
   const double proportional_gain;
   const double integral_gain;
+  const double differential_gain;
   const double windup_limit;
 
 protected:
@@ -17,10 +18,11 @@ protected:
   double target;
   double error_integral;
   double control_value;
+  double last_error;
 
 public:
-  PIController(
-    double proportional_gain, double integral_gain, double windup_limit,
+  PIDController(
+    double proportional_gain, double integral_gain, double differential_gain, double windup_limit,
     const rclcpp::Time & time_zero);
 
   /// Chooses a new target value that the controller is aiming for

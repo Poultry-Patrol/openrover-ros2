@@ -8,7 +8,7 @@
 #include "openrover_core_msgs/msg/raw_command.hpp"
 #include "openrover_core_msgs/msg/raw_data.hpp"
 #include "openrover_core_msgs/msg/raw_motor_command.hpp"
-#include "pi_controller.hpp"
+#include "pid_controller.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time.hpp"
 #include "timestamped.hpp"
@@ -40,11 +40,12 @@ protected:
   std::string odom_frame_id;
   std::string odom_child_frame_id;
 
-  std::unique_ptr<PIController> left_motor_controller;
-  std::unique_ptr<PIController> right_motor_controller;
+  std::unique_ptr<PIDController> left_motor_controller;
+  std::unique_ptr<PIDController> right_motor_controller;
 
   bool left_wheel_fwd{};
   bool right_wheel_fwd{};
+  double flipper_cmd; //This is being used for pass through controls
 
   /// Callback for velocity commands
   void on_cmd_vel(geometry_msgs::msg::Twist::ConstSharedPtr msg);

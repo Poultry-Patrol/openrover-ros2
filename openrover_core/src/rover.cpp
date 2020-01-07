@@ -65,13 +65,14 @@ Rover::Rover() : Node("rover", rclcpp::NodeOptions().use_intra_process_comms(tru
     meters_per_encoder_sum,  //
     -radians_per_encoder_difference, +radians_per_encoder_difference;
 
-  auto pi_p = declare_parameter("motor_control_gain_p", 0.0005);
-  auto pi_i = declare_parameter("motor_control_gain_i", 0.004);
-  auto pi_windup = declare_parameter("motor_control_windup", 100.0);
+  auto pid_p = declare_parameter("motor_control_gain_p", 0.0005);
+  auto pid_i = declare_parameter("motor_control_gain_i", 0.004);
+  auto pid_d = declare_parameter("motor_control_gain_d", 0.0);
+  auto pid_windup = declare_parameter("motor_control_windup", 100.0);
   auto now = get_clock()->now();
 
-  left_motor_controller = std::make_unique<PIController>(pi_p, pi_i, pi_windup, now);
-  right_motor_controller = std::make_unique<PIController>(pi_p, pi_i, pi_windup, now);
+  left_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
+  right_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
 }
 
 /// Takes a number between -1.0 and +1.0 and converts it to the nearest motor
@@ -116,8 +117,7 @@ void Rover::on_cmd_vel(geometry_msgs::msg::Twist::ConstSharedPtr msg)
   auto r_motor = encoder_target_freqs[1];
 
   // save off wheel direction for odometry purposes
-  left_wheel_fwd = (l_motor >= 0);
-  right_wheel_fwd = (r_motor >= 0);
+  flipper_cmd = msg->angular.y;
 
   left_motor_controller->set_target(l_motor);
   right_motor_controller->set_target(r_motor);
@@ -193,11 +193,15 @@ void openrover::Rover::update_odom()
   {
     auto l_effort = left_motor_controller->step(now, encoder_frequency_lr[0]);
     auto r_effort = right_motor_controller->step(now, encoder_frequency_lr[1]);
+    auto f_effort = flipper_cmd;
+
+    left_wheel_fwd = (l_effort >= 0);
+    right_wheel_fwd = (r_effort >= 0);
 
     openrover_core_msgs::msg::RawMotorCommand e;
     e.left = to_motor_command(l_effort);
     e.right = to_motor_command(r_effort);
-    e.flipper = to_motor_command(0);  // todo
+    e.flipper = to_motor_command(f_effort);  // todo
     pub_motor_efforts->publish(e);
   }
 
