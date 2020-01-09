@@ -195,8 +195,10 @@ void openrover::Rover::update_odom()
     auto r_effort = right_motor_controller->step(now, encoder_frequency_lr[1]);
     auto f_effort = flipper_cmd;
 
-    left_wheel_fwd = (l_effort >= 0);
-    right_wheel_fwd = (r_effort >= 0);
+    if (l_effort != 0)
+      left_wheel_fwd = (l_effort >= 0);
+    if (r_effort != 0)
+      right_wheel_fwd = (r_effort >= 0);
 
     openrover_core_msgs::msg::RawMotorCommand e;
     e.left = to_motor_command(l_effort);
