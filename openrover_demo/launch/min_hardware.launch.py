@@ -10,6 +10,9 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import SetEnvironmentVariable
 from launch_ros.actions import Node
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import ThisLaunchFileDir
 
 
 def generate_launch_description():
@@ -24,4 +27,5 @@ def generate_launch_description():
             package='openrover_core', node_executable='rover', output='screen',
             parameters=[hardware_config]
         ),
+        IncludeLaunchDescription(PythonLaunchDescriptionSource([ThisLaunchFileDir(), '/xbox.launch.py'])),
     ])

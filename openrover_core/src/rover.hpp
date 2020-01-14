@@ -33,6 +33,15 @@ protected:
   /// efford in opposite directions
   double top_speed_angular;
 
+  bool use_pid;
+  bool use_pid_flippers;
+  std::string save_encoder_ticks;
+  std::string save_left_odometry_data;
+  std::string save_right_odometry_data;
+
+  Eigen::Vector2d encoder_frequency_lr;
+  Eigen::Vector2d prev_encoder_frequency_lr;
+
   /// Describes the relation between the encoder frequencies and the rover
   /// velocity
   Eigen::Matrix2d encoder_frequency_lr_to_twist_fl;

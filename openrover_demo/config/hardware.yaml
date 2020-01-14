@@ -6,12 +6,14 @@ rover:
   ros__parameters:
     diagnostics_frequency: 0.2
     odometry_frequency: 15.0
-    meters_per_encoder_sum: 0.00067390542
-    radians_per_encoder_difference: 0.0037130276
+    meters_per_encoder_sum: 0.00011231757 #0.00067390542
+    radians_per_encoder_difference: 0.00061883793 #0.0037130276
     motor_control_gain_p: 0.0005
-    motor_control_gain_i: 0.0008
-    motor_control_gain_d: 0.00001 # 0.0001
+    motor_control_gain_i: 0.001
+    motor_control_gain_d: 0.00000 # 0.0001
     motor_control_windup: 100.0
+    left_odometry_save_file: /home/nickp/Desktop/new_poultry_ws/l_odom.csv
+    right_odometry_save_file: /home/nickp/Desktop/new_poultry_ws/r_odom.csv
 
 rplidar_node:
   ros__parameters:

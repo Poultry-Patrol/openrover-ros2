@@ -44,6 +44,12 @@ Rover::Rover() : Node("rover", rclcpp::NodeOptions().use_intra_process_comms(tru
   // configuration (2wd/4wd/treads) and terrain
   top_speed_linear = declare_parameter("top_speed_linear", 3.05);
   top_speed_angular = declare_parameter("top_speed_angular", 16.2);
+  use_pid = declare_parameter("use_pid", true);
+  use_pid_flippers = declare_parameter("use_pid_flippers", false);
+  save_encoder_ticks = declare_parameter("encode_save_file", "");
+  save_left_odometry_data = declare_parameter("left_odometry_save_file", "");
+  save_right_odometry_data = declare_parameter("right_odometry_save_file", "");
+  RCLCPP_INFO(get_logger(), "%s, %s", save_left_odometry_data.c_str(), save_right_odometry_data.c_str());
 
   /// If both motor encoders have traveled a combined n increments, this times n
   /// is how far the rover has traveled.
@@ -71,8 +77,23 @@ Rover::Rover() : Node("rover", rclcpp::NodeOptions().use_intra_process_comms(tru
   auto pid_windup = declare_parameter("motor_control_windup", 100.0);
   auto now = get_clock()->now();
 
-  left_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
-  right_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
+  RCLCPP_INFO(get_logger(), "PID parameters P: %f, I: %f, D: %f, Windup: %f", pid_p, pid_i, pid_d, pid_windup);
+
+  if(save_left_odometry_data.empty()) {
+    left_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
+  }
+  else{
+    RCLCPP_INFO(get_logger(), "Save Left odometry to %s", save_left_odometry_data.c_str());
+    left_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now, save_left_odometry_data);
+  }
+
+  if(save_right_odometry_data.empty()) {
+    right_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now);
+  }
+  else{
+    RCLCPP_INFO(get_logger(), "Save Left odometry to %s", save_right_odometry_data.c_str());
+    right_motor_controller = std::make_unique<PIDController>(pid_p, pid_i, pid_d, pid_windup, now, save_right_odometry_data);
+  }
 }
 
 /// Takes a number between -1.0 and +1.0 and converts it to the nearest motor
@@ -109,6 +130,10 @@ void Rover::on_cmd_vel(geometry_msgs::msg::Twist::ConstSharedPtr msg)
   }
 
   Eigen::Vector2d twist_fl(linear_rate, turn_rate);
+
+  if (!use_pid){
+
+  }
 
   RCLCPP_DEBUG(get_logger(), "target velocity = fwd:%f ccw:%f", linear_rate, turn_rate);
   auto encoder_target_freqs = encoder_frequency_lr_to_twist_fl.inverse() * twist_fl;
@@ -167,7 +192,8 @@ void openrover::Rover::update_odom()
   // Determine encoder frequency.
   // earlier versions of the firmware don't return the encoder position so we
   // have to make do with the period estimate
-  Eigen::Vector2d encoder_frequency_lr;
+//  Eigen::Vector2d encoder_frequency_lr;
+  prev_encoder_frequency_lr = encoder_frequency_lr;
   if (left_encoder_position->state == 0 && right_encoder_position->state == 0) {
     encoder_frequency_lr = {((left_period->state == 0) ? 0 : 1.0 / (left_period->state)),
                             ((right_period->state == 0) ? 0 : 1.0 / (right_period->state))};
@@ -196,9 +222,16 @@ void openrover::Rover::update_odom()
     auto f_effort = flipper_cmd;
 
     if (l_effort != 0)
-      left_wheel_fwd = (l_effort >= 0);
+      if (std::abs(encoder_frequency_lr[0]) < 300)
+        left_wheel_fwd = (l_effort >= 0);
+      else
+        left_wheel_fwd = !std::signbit(encoder_frequency_lr[0]);
+
     if (r_effort != 0)
-      right_wheel_fwd = (r_effort >= 0);
+      if (std::abs(encoder_frequency_lr[1]) < 300)
+        right_wheel_fwd = (r_effort >= 0);
+      else
+        right_wheel_fwd = !std::signbit(encoder_frequency_lr[1]);
 
     openrover_core_msgs::msg::RawMotorCommand e;
     e.left = to_motor_command(l_effort);
